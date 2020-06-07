@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/coding-boot-camp/unit18hw.git"
+    "url": "git+https://https://github.com/omiinaya/progressive-budget.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/coding-boot-camp/unit18hw/issues"
+    "url": "https://https://github.com/omiinaya/progressive-budget.git"
   },
-  "homepage": "https://github.com/coding-boot-camp/unit18hw#readme",
+  "homepage": "https://https://github.com/omiinaya/progressive-budget.git",
   "dependencies": {
     "compression": "^1.7.4",
     "express": "^4.17.1",
