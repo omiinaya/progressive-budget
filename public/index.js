@@ -1,155 +1,187 @@
+/**
+ * Progressive Budget Tracker Frontend
+ * Modern, modular, accessible, and performant
+ */
+
 let transactions = [];
 let myChart;
 
-fetch("/api/transaction")
-  .then(response => response.json())
-  .then(data => {
-    // save db data on global variable
-    transactions = data;
-    populateTotal();
-    populateTable();
-    populateChart();
-  });
+// Utility: Get element by selector
+const $ = (selector) => document.querySelector(selector);
 
-function populateTotal() {
-  // reduce transaction amounts to a single total value
-  const total = transactions.reduce((total, t) => {
-    return total + parseInt(t.value);
-  }, 0);
-
-  const totalEl = document.querySelector("#total");
-  totalEl.textContent = total;
+// Fetch transactions and initialize UI
+async function fetchTransactions() {
+  try {
+    const response = await fetch('/api/transaction');
+    if (!response.ok) throw new Error('Failed to fetch transactions');
+    transactions = await response.json();
+    updateUI();
+  } catch (error) {
+    showError('Unable to load transactions. Please try again later.');
+    console.error(error);
+  }
 }
 
+// Update all UI components
+function updateUI() {
+  populateTotal();
+  populateTable();
+  populateChart();
+}
+
+// Show error message and set ARIA live
+function showError(message) {
+  const errorEl = $('#error-message');
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.setAttribute('aria-live', 'assertive');
+    errorEl.style.display = 'block';
+    errorEl.focus && errorEl.focus();
+  }
+}
+
+// Hide error message
+function hideError() {
+  const errorEl = $('#error-message');
+  if (errorEl) {
+    errorEl.textContent = '';
+    errorEl.style.display = 'none';
+  }
+}
+
+// Populate total balance
+function populateTotal() {
+  const total = transactions.reduce((sum, t) => sum + Number(t.value), 0);
+  const totalEl = $('#total');
+  if (totalEl) totalEl.textContent = total.toLocaleString();
+}
+
+// Populate transaction table
 function populateTable() {
-  const tbody = document.querySelector("#tbody");
-  tbody.innerHTML = "";
-
-  transactions.forEach(transaction => {
-    // create and populate a table row
-    const tr = document.createElement("tr");
+  const tbody = $('#tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  transactions.forEach((transaction) => {
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${transaction.name}</td>
-      <td>${transaction.value}</td>
+      <td>${escapeHTML(transaction.name)}</td>
+      <td>${Number(transaction.value).toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</td>
     `;
-
     tbody.appendChild(tr);
   });
 }
 
+// Escape HTML for safe rendering
+function escapeHTML(str) {
+  return String(str).replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
+}
+
+// Populate chart with Chart.js
 function populateChart() {
-  // copy array and reverse it
   const reversed = transactions.slice().reverse();
   let sum = 0;
-
-  // create date labels for chart
   const labels = reversed.map(t => {
     const date = new Date(t.date);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   });
-
-  // create incremental values for chart
   const data = reversed.map(t => {
-    sum += parseInt(t.value);
+    sum += Number(t.value);
     return sum;
   });
-
-  // remove old chart if it exists
-  if (myChart) {
-    myChart.destroy();
-  }
-
-  const ctx = document.getElementById("my-chart").getContext("2d");
-
+  if (myChart) myChart.destroy();
+  const ctx = $('#my-chart')?.getContext('2d');
+  if (!ctx) return;
   myChart = new Chart(ctx, {
-    type: "line",
+    type: 'line',
     data: {
       labels,
-      datasets: [
-        {
-          label: "Total Over Time",
-          fill: true,
-          backgroundColor: "#6666ff",
-          data
-        }
-      ]
+      datasets: [{
+        label: 'Total Over Time',
+        fill: true,
+        backgroundColor: '#317EFB33',
+        borderColor: '#317EFB',
+        data,
+        tension: 0.3,
+        pointRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
     }
   });
 }
 
-function sendTransaction(isAdding) {
-  const nameEl = document.querySelector("#t-name");
-  const amountEl = document.querySelector("#t-amount");
-  const errorEl = document.querySelector("form .error");
-
-  // validate form
-  if (nameEl.value === "" || amountEl.value === "") {
-    errorEl.textContent = "Missing Information";
+// Handle transaction form submission
+async function sendTransaction(isAdding) {
+  const nameEl = $('#t-name');
+  const amountEl = $('#t-amount');
+  hideError();
+  if (!nameEl.value.trim() || !amountEl.value.trim()) {
+    showError('Missing Information');
+    nameEl.focus();
     return;
-  } else {
-    errorEl.textContent = "";
   }
-
-  // create record
   const transaction = {
-    name: nameEl.value,
-    value: amountEl.value,
+    name: nameEl.value.trim(),
+    value: isAdding ? Math.abs(Number(amountEl.value)) : -Math.abs(Number(amountEl.value)),
     date: new Date().toISOString()
   };
-
-  // if subtracting funds, convert amount to negative number
-  if (!isAdding) {
-    transaction.value *= -1;
-  }
-
-  // add to beginning of current array of data
   transactions.unshift(transaction);
-
-  // re-run logic to populate ui with new record
-  populateChart();
-  populateTable();
-  populateTotal();
-
-  // also send to server
-  fetch("/api/transaction", {
-    method: "POST",
-    body: JSON.stringify(transaction),
-    headers: {
-      Accept: "application/json, text/plain, */*",
-      "Content-Type": "application/json"
-    }
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.errors) {
-        errorEl.textContent = "Missing Information";
-      } else {
-        // clear form
-        nameEl.value = "";
-        amountEl.value = "";
+  updateUI();
+  try {
+    const response = await fetch('/api/transaction', {
+      method: 'POST',
+      body: JSON.stringify(transaction),
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Content-Type': 'application/json'
       }
-    })
-    .catch(err => {
-      // fetch failed, so save in indexed db
-      saveRecord(transaction);
-
-      // clear form
-      nameEl.value = "";
-      amountEl.value = "";
     });
+    const data = await response.json();
+    if (data.errors) {
+      showError('Missing Information');
+    } else {
+      nameEl.value = '';
+      amountEl.value = '';
+      nameEl.focus();
+    }
+  } catch (err) {
+    // Save to IndexedDB if offline
+    saveRecord(transaction);
+    nameEl.value = '';
+    amountEl.value = '';
+    nameEl.focus();
+    showError('Offline: Transaction will sync when online.');
+  }
 }
 
-document.querySelector("#add-btn").addEventListener("click", function(event) {
+// Event listeners
+$('#add-btn')?.addEventListener('click', (event) => {
   event.preventDefault();
   sendTransaction(true);
 });
-
-document.querySelector("#sub-btn").addEventListener("click", function(event) {
+$('#sub-btn')?.addEventListener('click', (event) => {
   event.preventDefault();
   sendTransaction(false);
 });
-
-document.querySelector("#del-btn").addEventListener("click", function(event) {
+$('#del-btn')?.addEventListener('click', (event) => {
   event.preventDefault();
   deletePending();
+  showError('Pending transactions cleared.');
+  setTimeout(hideError, 2000);
 });
+
+// Accessibility: focus on error
+$('#error-message')?.addEventListener('DOMSubtreeModified', function() {
+  if (this.textContent) this.focus();
+});
+
+// Initial load
+window.addEventListener('DOMContentLoaded', fetchTransactions);

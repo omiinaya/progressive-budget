@@ -4,66 +4,153 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="description" content="Progressive Budget Tracker - Track your expenses and income offline and online with real-time synchronization" />
+    <meta name="keywords" content="budget, tracker, finance, money, expense, income, PWA, offline" />
+    <meta name="author" content="Budget Tracker Team" />
+    
+    <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#317EFB" />
-    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Budget Tracker" />
+    
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://stackpath.bootstrapcdn.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
 
+    <!-- Stylesheets -->
     <link
       rel="stylesheet"
       href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      crossorigin="anonymous"
     />
     <link rel="stylesheet" href="/styles.css" />
-    <title>Budget Tracker</title>
+    
+    <title>Progressive Budget Tracker - Manage Your Finances</title>
   </head>
   <body>
     <div class="wrapper">
-      <div class="total">
-        <div>Your total is: $<span id="total">0</span></div>
-      </div>
-
-      <form>
-        <label for="t-name">Transaction Name:</label>
-        <input type="text" id="t-name" placeholder="Name" />
-
-        <label for="t-amount">Transaction Amount:</label>
-        <input type="number" min="0" id="t-amount" placeholder="Amount" />
-
-        <div class="transaction-buttons">
-          <button id="add-btn"><i class="fa fa-plus"></i> Add Funds</button>
-          <button id="sub-btn">
-            <i class="fa fa-minus"></i> Subtract Funds
-          </button>
-          <button id="del-btn">
-            <i class="fa fa-trash"></i> Delete Pending records
-          </button>
+      <header>
+        <h1>Budget Tracker</h1>
+        <div class="total" role="banner" aria-live="polite">
+          <div>Your total is: $<span id="total" aria-label="Current balance">0</span></div>
         </div>
-        <p role="alert" class="error"></p>
-      </form>
+      </header>
 
-      <div class="transactions">
-        <table>
-          <thead>
-            <th>Transaction</th>
-            <th>Amount</th>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
+      <main>
+        <form role="form" aria-labelledby="transaction-form-title">
+          <h2 id="transaction-form-title" class="sr-only">Add Transaction</h2>
+          
+          <div class="form-group">
+            <label for="t-name">Transaction Name:</label>
+            <input 
+              type="text" 
+              id="t-name" 
+              name="transaction-name"
+              placeholder="Enter transaction name" 
+              required
+              aria-describedby="name-help"
+              autocomplete="off"
+            />
+            <small id="name-help" class="form-text">Enter a descriptive name for this transaction</small>
+          </div>
 
-      <canvas id="my-chart"></canvas>
+          <div class="form-group">
+            <label for="t-amount">Transaction Amount:</label>
+            <input 
+              type="number" 
+              min="0.01" 
+              step="0.01"
+              id="t-amount" 
+              name="transaction-amount"
+              placeholder="0.00" 
+              required
+              aria-describedby="amount-help"
+            />
+            <small id="amount-help" class="form-text">Enter the amount in dollars</small>
+          </div>
+
+          <div class="transaction-buttons" role="group" aria-label="Transaction actions">
+            <button type="button" id="add-btn" class="btn btn-success" aria-describedby="add-help">
+              <i class="fa fa-plus" aria-hidden="true"></i> Add Funds
+            </button>
+            <button type="button" id="sub-btn" class="btn btn-danger" aria-describedby="sub-help">
+              <i class="fa fa-minus" aria-hidden="true"></i> Subtract Funds
+            </button>
+            <button type="button" id="del-btn" class="btn btn-warning" aria-describedby="del-help">
+              <i class="fa fa-trash" aria-hidden="true"></i> Clear Pending
+            </button>
+          </div>
+          
+          <div class="help-text">
+            <small id="add-help">Add money to your budget</small>
+            <small id="sub-help">Remove money from your budget</small>
+            <small id="del-help">Clear offline pending transactions</small>
+          </div>
+          
+          <div role="alert" class="error" aria-live="assertive" id="error-message"></div>
+        </form>
+
+        <section class="transactions" aria-labelledby="transactions-title">
+          <h2 id="transactions-title">Transaction History</h2>
+          <div class="table-container" role="region" aria-label="Transaction list">
+            <table role="table" aria-labelledby="transactions-title">
+              <thead>
+                <tr>
+                  <th scope="col">Transaction</th>
+                  <th scope="col">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="tbody" aria-live="polite">
+                <!-- Transactions will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="chart-section" aria-labelledby="chart-title">
+          <h2 id="chart-title">Balance Over Time</h2>
+          <div class="chart-container">
+            <canvas 
+              id="my-chart" 
+              role="img" 
+              aria-label="Line chart showing balance over time"
+              aria-describedby="chart-description"
+            ></canvas>
+            <p id="chart-description" class="sr-only">
+              This chart shows your account balance changes over time
+            </p>
+          </div>
+        </section>
+      </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <!-- Scripts loaded with proper attributes -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0" crossorigin="anonymous"></script>
     <script src="/db.js"></script>
     <script src="/index.js"></script>
     
+    <!-- Service Worker Registration -->
     <script>  
-††††††if ("serviceWorker" in navigator) {
-††††††††window.addEventListener("load", () => {
-††††††††††navigator.serviceWorker.register("service-worker.js").then(reg => {
-††††††††††††console.log("We found your service worker file!", reg);
-††††††††††});
-††††††††});
-††††††}
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("service-worker.js")
+            .then(registration => {
+              console.log("‚úÖ Service Worker registered successfully:", registration);
+            })
+            .catch(error => {
+              console.error("‚ùå Service Worker registration failed:", error);
+            });
+        });
+      }
     </script>
   </body>
 </html>
