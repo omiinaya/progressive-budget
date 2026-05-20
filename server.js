@@ -4,7 +4,7 @@
  * Supporting offline-first PWA functionality
  */
 
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const compression = require("compression");
@@ -19,18 +19,24 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/budget";
 const app = express();
 
 // Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://stackpath.bootstrapcdn.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https://stackpath.bootstrapcdn.com"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://stackpath.bootstrapcdn.com",
+        ],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https://stackpath.bootstrapcdn.com"],
+      },
     },
-  },
-}));
+  }),
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -43,43 +49,49 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-domain.com'] 
-    : ['http://localhost:3000'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin:
+      process.env.NODE_ENV === "production"
+        ? ["https://your-domain.com"]
+        : ["http://localhost:3000"],
+    credentials: true,
+  }),
+);
 
 // Compression and parsing middleware
 app.use(compression());
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 // Logging
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 // Static files with cache headers
-app.use(express.static("public", {
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : '0',
-  etag: true
-}));
+app.use(
+  express.static("public", {
+    maxAge: process.env.NODE_ENV === "production" ? "1d" : "0",
+    etag: true,
+  }),
+);
 
 // Database connection with improved error handling
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ Connected to MongoDB successfully');
-})
-.catch((error) => {
-  console.error('❌ MongoDB connection error:', error);
-  process.exit(1);
-});
+mongoose
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("✅ Connected to MongoDB successfully");
+  })
+  .catch((error) => {
+    console.error("❌ MongoDB connection error:", error);
+    process.exit(1);
+  });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down gracefully...');
+process.on("SIGINT", async () => {
+  console.log("🛑 Shutting down gracefully...");
   await mongoose.connection.close();
   process.exit(0);
 });
@@ -89,19 +101,19 @@ app.use(require("./routes/api.js"));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Server error:', err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  console.error("❌ Server error:", err.stack);
+  res.status(500).json({
+    error: "Something went wrong!",
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
   });
 });
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: "Route not found" });
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📱 Environment: ${process.env.NODE_ENV || "development"}`);
 });
