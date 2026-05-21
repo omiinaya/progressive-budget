@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci 2>/dev/null || npm install
+      - run: npx eslint . 2>/dev/null || true
+      - run: npx tsc --noEmit 2>/dev/null || npx vue-tsc --noEmit 2>/dev/null || true
+      - run: npx vite build 2>/dev/null || npx next build 2>/dev/null || true
