@@ -13,7 +13,14 @@
     "build": "npm run lint && npm test",
     "security:audit": "npm audit --audit-level moderate"
   },
-  "keywords": ["budget", "pwa", "offline", "tracker", "finance", "money-management"],
+  "keywords": [
+    "budget",
+    "pwa",
+    "offline",
+    "tracker",
+    "finance",
+    "money-management"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/omiinaya/progressive-budget.git"
